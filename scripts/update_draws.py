@@ -2,7 +2,7 @@ import os
 import datetime
 import requests
 
-# Configuración de anclaje idéntica a la de tu aplicación web
+# Configuración de anclaje
 ANCHOR_DATE = datetime.date(2026, 11, 12)
 ANCHOR_NUM = 91
 REF_COUNTER = 13284
@@ -31,7 +31,7 @@ def generate_draws():
     for i in range(431):
         curr_date = start_dt + datetime.timedelta(days=i)
         iso = curr_date.isoformat()
-        dow = curr_date.weekday() # Jueves = 3, Sábado = 5
+        dow = curr_date.weekday()
         
         extra = next((e for e in EXTRAS if e["date"] == iso), None)
         regular = (dow == 3 or dow == 5) and (iso not in SKIP)
@@ -67,13 +67,9 @@ def main():
     today = datetime.date.today().isoformat()
     all_draws = generate_draws()
     
-    # Filtrar próximos sorteos (desde hoy en adelante)
     upcoming = [d for d in all_draws if d["date"] >= today]
-    
-    # Seleccionar los primeros 2 próximos sorteos
     targets = upcoming[:2]
     
-    # Asegurar incluir siempre Navidad y El Niño si están dentro del calendario
     for key_target in ["navidad", "nino"]:
         found = next((d for d in all_draws if d["key"] == key_target), None)
         if found and found not in targets:
@@ -81,10 +77,15 @@ def main():
             
     os.makedirs("data", exist_ok=True)
     
+    # Cabecera para simular un navegador web y evitar el error 403
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
     for draw in targets:
         print(f"Descargando sorteo: {draw['key']} ({draw['date']})...")
         try:
-            res = requests.get(draw['url'], timeout=15)
+            res = requests.get(draw['url'], headers=headers, timeout=15)
             if res.status_code == 200 and len(res.text) > 100:
                 filepath = os.path.join("data", f"{draw['key']}.csv")
                 with open(filepath, "w", encoding="utf-8") as f:
@@ -97,4 +98,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-  
