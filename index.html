@@ -88,11 +88,7 @@
       <div style="margin-bottom:1rem;">
         <label for="sorteoSelect">Próximos sorteos</label>
         <select id="sorteoSelect">
-          <option value="">-- Selecciona un sorteo --</option>
-          <option value="jueves">Sorteo del Jueves</option>
-          <option value="sabado">Sorteo del Sábado</option>
-          <option value="navidad">Sorteo Extraordinario de Navidad</option>
-          <option value="nino">Sorteo Extraordinario de "El Niño"</option>
+          <option value="">-- Cargando sorteos y fechas --</option>
         </select>
         <p class="hint">Los listados se cargan automáticamente desde la carpeta data/.</p>
       </div>
@@ -190,11 +186,47 @@
     const btnSelectFile = document.getElementById('btnSelectFile');
     const fileInput = document.getElementById('fileInput');
 
-    // Carga desde GitHub (carpeta data/) al cambiar el desplegable
-    sorteoSelect.addEventListener('change', async (e) => {
-      const key = e.target.value;
-      if (!key) return;
+    // Lista de sorteos con fechas dinámicas orientativas y su clave de archivo
+    const availableDraws = [
+      { key: 'navidad', name: 'Sorteo Extraordinario de Navidad', date: '22/12/2026' },
+      { key: 'nino', name: 'Sorteo Extraordinario de "El Niño"', date: '06/01/2027' },
+      { key: 'jueves', name: 'Sorteo del Jueves', date: 'Próximo Jueves' },
+      { key: 'sabado', name: 'Sorteo del Sábado', date: 'Próximo Sábado' }
+    ];
 
+    // Inicializar el desplegable con fechas y seleccionar Navidad por defecto
+    function initDropdown() {
+      sorteoSelect.innerHTML = '<option value="">-- Selecciona un sorteo --</option>';
+      availableDraws.forEach(draw => {
+        const opt = document.createElement('option');
+        opt.value = draw.key;
+        opt.textContent = `${draw.name} (${draw.date})`;
+        sorteoSelect.appendChild(opt);
+      });
+
+      // Intentar cargar Navidad por defecto; si no está, el primero disponible
+      cargarSorteoPorDefecto();
+    }
+
+    async function cargarSorteoPorDefecto() {
+      let targetKey = 'navidad';
+      
+      // Comprobar si Navidad existe en la carpeta data/, si no, buscar el primer disponible
+      try {
+        const testRes = await fetch(`data/navidad.csv`, { method: 'HEAD' });
+        if (!testRes.ok) {
+          targetKey = availableDraws[0].key;
+        }
+      } catch (e) {
+        targetKey = availableDraws[0].key;
+      }
+
+      sorteoSelect.value = targetKey;
+      cargarCSVRemoto(targetKey);
+    }
+
+    async function cargarCSVRemoto(key) {
+      if (!key) return;
       showStatus('Cargando sorteo desde el servidor...', 'ok');
       try {
         const response = await fetch(`data/${key}.csv`);
@@ -205,6 +237,10 @@
         showStatus(`Aviso: ${err.message}`, 'error');
         disableSearch();
       }
+    }
+
+    sorteoSelect.addEventListener('change', (e) => {
+      cargarCSVRemoto(e.target.value);
     });
 
     // Conectar botón visible con input oculto
@@ -324,6 +360,9 @@
       sorteoSelect.value = '';
       showStatus('Caché y selección borradas.', 'ok');
     });
+
+    // Ejecutar la carga al iniciar la página
+    initDropdown();
   </script>
 </body>
 </html>
