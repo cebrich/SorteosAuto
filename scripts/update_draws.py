@@ -76,34 +76,28 @@ def main():
             
     os.makedirs("data", exist_ok=True)
     
-    # Crear sesión para gestionar cookies y simular navegador completo
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-        "Referer": "https://www.loteriasyapuestas.es/"
-    })
+    api_key = os.environ.get("SCRAPER_API_KEY")
     
-    try:
-        # Visitar la página principal primero para capturar las cookies de sesión del WAF
-        session.get("https://www.loteriasyapuestas.es/", timeout=15)
-    except Exception:
-        pass
-
     for draw in targets:
         print(f"Descargando sorteo: {draw['key']} ({draw['date']})...")
         try:
-            res = session.get(draw['url'], timeout=15)
+            if api_key:
+                # Enrutar a través de IP de España usando ScraperAPI
+                proxy_url = f"http://api.scraperapi.com?api_key={api_key}&country_code=es&url={requests.utils.quote(draw['url'])}"
+                res = requests.get(proxy_url, timeout=30)
+            else:
+                res = requests.get(draw['url'], headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+                
             if res.status_code == 200 and len(res.text) > 100:
                 filepath = os.path.join("data", f"{draw['key']}.csv")
                 with open(filepath, "w", encoding="utf-8") as f:
                     f.write(res.text)
                 print(f"-> Guardado con éxito en {filepath}")
             else:
-                print(f"-> Aviso: El sorteo aún no está disponible o devolvió estado {res.status_code}")
+                print(f"-> Aviso: El servidor devolvió estado {res.status_code}")
         except Exception as e:
             print(f"-> Error al descargar {draw['key']}: {e}")
 
 if __name__ == "__main__":
     main()
+
