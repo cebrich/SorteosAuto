@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buscador de Números Disponibles - Lotería</title>
+  <style>
+    :root {
+      --primary: #1a5f2a;
+      --primary-dark: #0f3d1a;
+      --accent: #c9a227;
+      --bg: #f5f7f5;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #5a6a5a;
+      --border: #d0d8d0;
+      --success: #2e7d32;
+      --danger: #c62828;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 1.35rem 1rem;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 1.15rem 1rem 3rem;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      padding: 1.3rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+    }
+
+    .card h2 {
+      font-size: 1.08rem;
+      color: var(--primary);
+      margin-bottom: 0.85rem;
+    }
+
+    .status {
+      margin-top: 0.7rem;
+      font-size: 0.9rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .status.ok {
+      display: block;
+      background: #e8f5e9;
+      color: var(--success);
+      border: 1px solid #a5d6a7;
+    }
+
+    .status.error {
+      display: block;
+      background: #ffebee;
+      color: var(--danger);
+      border: 1px solid #ef9a9a;
+    }
+
+    label {
+      display: block;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 95, 42, 0.15);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 0.55rem;
+    }
+
+    button {
+      padding: 0.72rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    button:active { transform: scale(0.98); }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .btn-secondary { background: #e8eee8; color: var(--primary-dark); }
+    .btn-secondary:hover { background: #d8e0d8; }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .results-count { font-size: 0.92rem; color: var(--muted); }
+    .results-count strong { color: var(--primary); }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    th {
+      background: #eef4ee;
+      text-align: left;
+      padding: 0.65rem 0.9rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 0.55rem 0.9rem;
+      border-bottom: 1px solid #e8ece8;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f7faf7; }
+
+    .num {
+      font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      font-size: 1.05rem;
+    }
+
+    .fracciones { font-variant-numeric: tabular-nums; }
+    .fracciones.low { color: var(--danger); font-weight: 600; }
+
+    .empty-state {
+      text-align: center;
+      padding: 1.8rem 1rem;
+      color: var(--muted);
+    }
+
+    .hint {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.55rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 0.45rem 0.9rem;
+      border-radius: 20px;
+      background: #e8eee8;
+      color: var(--primary-dark);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .mode-panel { display: none; }
+    .mode-panel.active { display: block; }
+
+    footer {
+      text-align: center;
+      padding: 1.3rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .more-warning {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      color: #e65100;
+      padding: 0.6rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      margin-top: 0.7rem;
+      display: none;
+    }
+
+    .more-warning.show { display: block; }
+
+    .saved-info {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.45rem;
+    }
+
+    details {
+      margin-top: 0.85rem;
+      border-top: 1px solid var(--border);
+      padding-top: 0.85rem;
+    }
+
+    details summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    details[open] summary { margin-bottom: 0.6rem; }
+
+    .hidden-file {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎫 Buscador de Números Disponibles</h1>
+    <p>Lotería Nacional · Carga Automática</p>
+  </header>
+
+  <div class="container">
+
+    <!-- Carga -->
+    <div class="card">
+      <h2>1. Selección de Sorteo</h2>
+
+      <div style="margin-bottom:1rem;">
+        <label for="sorteoSelect">Próximos sorteos</label>
+        <select id="sorteoSelect" style="width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:inherit;background:white;"></select>
+        <p class="hint">Los listados se cargan automáticamente desde el servidor.</p>
+      </div>
+
+      <div class="status" id="status"></div>
+      <div class="saved-info" id="savedInfo"></div>
+
+      <div class="btn-row" style="margin-top:0.75rem;">
+        <button class="btn-secondary" id="btnClearData">Borrar caché local</button>
+      </div>
+
+      <details style="margin-top:1.2rem;">
+        <summary>Opciones manuales (respaldo)</summary>
+        <div style="margin-top:0.7rem;">
+          <div class="btn-row">
+            <button class="btn-primary" id="btnSelectFile">📁 Seleccionar archivo CSV local</button>
+          </div>
+          <input type="file" id="fileInput" class="hidden-file" accept=".csv,text/csv,text/plain">
+        </div>
+      </details>
+    </div>
+
+    <!-- Búsqueda -->
+    <div class="card" id="searchCard" style="opacity:0.5;pointer-events:none;">
+      <h2>2. Buscar números</h2>
+
+      <div class="tabs">
+        <button class="tab active" data-mode="exact">Número exacto</button>
+        <button class="tab" data-mode="suffix">Terminación</button>
+        <button class="tab" data-mode="prefix">Inicio</button>
+      </div>
+
+      <div class="mode-panel active" id="panel-exact">
+        <label for="exactInput">Número de 5 cifras</label>
+        <input type="text" id="exactInput" maxlength="5" placeholder="Ej: 12345" inputmode="numeric" pattern="[0-9]*">
+      </div>
+
+      <div class="mode-panel" id="panel-suffix">
+        <label for="suffixInput">Terminación (2, 3 o 4 cifras)</label>
+        <input type="text" id="suffixInput" maxlength="4" placeholder="Ej: 25 · 123 · 4567" inputmode="numeric" pattern="[0-9]*">
+        <p class="hint">Números que <strong>terminan</strong> en esas cifras.</p>
+      </div>
+
+      <div class="mode-panel" id="panel-prefix">
+        <label for="prefixInput">Inicio (2, 3 o 4 cifras)</label>
+        <input type="text" id="prefixInput" maxlength="4" placeholder="Ej: 12 · 345 · 9876" inputmode="numeric" pattern="[0-9]*">
+        <p class="hint">Números que <strong>empiezan</strong> por esas cifras.</p>
+      </div>
+
+      <div class="btn-row" style="margin-top:1rem;">
+        <button class="btn-primary" id="btnSearch">🔍 Buscar</button>
+        <button class="btn-secondary" id="btnClear">Limpiar</button>
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="card" id="resultsCard" style="display:none;">
+      <div class="results-header">
+        <h2 style="margin:0;">Resultados</h2>
+        <div class="results-count" id="resultsCount"></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Fracciones</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+      <div class="more-warning" id="moreWarning"></div>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <p>No se encontraron números con ese criterio.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Datos procesados automáticamente en GitHub · Uso personal<br>
+    Esta herramienta no está afiliada a SELAE.
+  </footer>
+
+  <script>
+    const LIMIT = 25;
+
+    const CAL = {
+      anchor: { date: '2026-11-12', num: 91 },
+      horizonDays: 430,
+      extras: [
+        { date: '2026-12-06', name: 'Sorteo Extraordinario Día de la Constitución' },
+        { date: '2026-12-22', name: 'Sorteo Extraordinario de Navidad' },
+        { date: '2027-01-06', name: 'Sorteo Extraordinario de “El Niño”' }
+      ],
+      skip: ['2026-12-05', '2026-12-19', '2027-01-02'],
+      fixedNums: { '2026-12-22': 102, '2027-01-06': 1 },
+      verified: ['2026-11-12', '2026-11-14', '2026-11-21', '2026-12-22', '2027-01-06']
+    };
+
+    const UPCOMING = 20;
+    const REF_MS = Date.UTC(2026, 10, 12);
+    const MS_DAY = 86400000;
+
+    const LEGACY_KEYS = {
+      '2026-11-12': 'jueves',
+      '2026-11-14': 'sabado',
+      '2026-12-22': 'navidad',
+      '2027-01-06': 'nino'
+    };
+
+    function isoToMs(iso) {
+      const p = iso.split('-').map(Number);
+      return Date.UTC(p[0], p[1] - 1, p[2]);
+    }
+
+    function fmtDate(iso) {
+      const p = iso.split('-');
+      return p[2] + '/' + p[1] + '/' + p[0];
+    }
+
+    function generateDraws() {
+      const list = [];
+      const start = isoToMs(CAL.anchor.date);
+      let num = CAL.anchor.num;
+      let prevYear = CAL.anchor.date.slice(0, 4);
+      let first = true;
+      for (let i = 0; i <= CAL.horizonDays; i++) {
+        const ms = start + i * MS_DAY;
+        const iso = new Date(ms).toISOString().slice(0, 10);
+        const dow = new Date(ms).getUTCDay();
+        const extra = CAL.extras.filter(function (e) { return e.date === iso; })[0];
+        const regular = (dow === 4 || dow === 6) && CAL.skip.indexOf(iso) < 0;
+        if (!extra && !regular) continue;
+        if (!first) {
+          const y = iso.slice(0, 4);
+          num = (y !== prevYear) ? 1 : num + 1;
+          prevYear = y;
+        }
+        first = false;
+        if (CAL.fixedNums[iso]) num = CAL.fixedNums[iso];
+        list.push({
+          key: LEGACY_KEYS[iso] || 's-' + iso.replace(/-/g, ''),
+          date: iso,
+          num: num,
+          name: extra ? extra.name : (dow === 4 ? 'Sorteo del Jueves' : 'Sorteo de Lotería Nacional')
+        });
+      }
+      return list;
+    }
+
+    function todayISO() {
+      return new Date().toLocaleDateString('sv-SE');
+    }
+
+    let SORTEOS = {};
+    let DRAW_LIST = [];
+
+    function setDrawList(list) {
+      DRAW_LIST = list;
+      SORTEOS = {};
+      const sel = document.getElementById('sorteoSelect');
+      sel.innerHTML = '';
+      list.forEach(function (d) {
+        SORTEOS[d.key] = {
+          name: fmtDate(d.date) + ' · ' + d.name,
+          file: d.key + '.csv'
+        };
+        const opt = document.createElement('option');
+        opt.value = d.key;
+        opt.textContent = SORTEOS[d.key].name;
+        sel.appendChild(opt);
+      });
+    }
+
+    (function () {
+      const all = generateDraws();
+      const hoy = todayISO();
+      const next = all.filter(function (d) { return d.date >= hoy; }).slice(0, UPCOMING);
+      setDrawList(next.length ? next : all.slice(-UPCOMING));
+    })();
+
+    let currentSorteo = 'navidad';
+    let numbersMap = new Map();
+    let currentMode = 'exact';
+
+    function storageKey() {
+      return 'loteria_numeros_' + currentSorteo + '_v2';
+    }
+
+    function pad5(n) {
+      return String(n).replace(/\D/g, '').padStart(5, '0').slice(-5);
+    }
+
+    function parseCSV(text) {
+      const map = new Map();
+      const lines = text.split(/\r?\n/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || /^NUMERO/i.test(trimmed) || trimmed.startsWith('-') || trimmed.startsWith('#')) continue;
+        const parts = trimmed.split(/[;,\t]/).map(function(p) { return p.trim(); }).filter(Boolean);
+        if (parts.length < 2) continue;
+        const numStr = parts[0].replace(/\D/g, '');
+        const frac = parseInt(parts[1].replace(/\D/g, ''), 10);
+        if (!numStr || isNaN(frac)) continue;
+        map.set(pad5(numStr), frac);
+      }
+      return map;
+    }
+
+    function setStatus(msg, type) {
+      type = type || 'ok';
+      const el = document.getElementById('status');
+      el.innerHTML = msg;
+      el.className = 'status ' + type;
+    }
+
+    function updateSavedInfo(timestamp) {
+      const el = document.getElementById('savedInfo');
+      if (!timestamp) { el.textContent = ''; return; }
+      const d = new Date(timestamp);
+      const fecha = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const hora = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      el.textContent = '📦 Cargado desde caché: ' + fecha + ' ' + hora;
+    }
+
+    function enableSearch(enabled) {
+      const card = document.getElementById('searchCard');
+      card.style.opacity = enabled ? '1' : '0.5';
+      card.style.pointerEvents = enabled ? 'auto' : 'none';
+    }
+
+    function saveToStorage(map) {
+      try {
+        const obj = {};
+        map.forEach(function(frac, num) { obj[num] = frac; });
+        const payload = { timestamp: Date.now(), count: map.size, data: obj };
+        localStorage.setItem(storageKey(), JSON.stringify(payload));
+      } catch (e) {}
+    }
+
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(storageKey());
+        if (!raw) return null;
+        const payload = JSON.parse(raw);
+        if (!payload || !payload.data) return null;
+        const map = new Map();
+        Object.keys(payload.data).forEach(function(num) {
+          map.set(num, payload.data[num]);
+        });
+        return { map: map, timestamp: payload.timestamp, count: payload.count };
+      } catch (e) { return null; }
+    }
+
+    function clearStorage() {
+      try { localStorage.removeItem(storageKey()); } catch (e) {}
+      updateSavedInfo(null);
+    }
+
+    function applyData(map, source) {
+      numbersMap = map;
+      if (map.size === 0) {
+        setStatus('El archivo CSV está vacío.', 'error');
+        enableSearch(false);
+        return false;
+      }
+      saveToStorage(map);
+      setStatus('✅ Cargados <strong>' + map.size.toLocaleString('es-ES') + '</strong> números · Sorteo: ' + SORTEOS[currentSorteo].name + ' (' + source + ')');
+      enableSearch(true);
+      return true;
+    }
+
+    function loadSorteoData(id) {
+      currentSorteo = id;
+      document.getElementById('sorteoSelect').value = id;
+      
+      numbersMap = new Map();
+      enableSearch(false);
+      document.getElementById('resultsCard').style.display = 'none';
+      updateSavedInfo(null);
+      setStatus('Cargando listado...', 'ok');
+
+      const saved = loadFromStorage();
+      if (saved && saved.map && saved.map.size > 0) {
+        numbersMap = saved.map;
+        enableSearch(true);
+        updateSavedInfo(saved.timestamp);
+        setStatus('✅ Cargado desde caché local (' + saved.count.toLocaleString('es-ES') + ' números)', 'ok');
+        return;
+      }
+
+      const csvPath = 'data/' + SORTEOS[id].file;
+      fetch(csvPath)
+        .then(function(response) {
+          if (!response.ok) throw new Error('No encontrado');
+          return response.text();
+        })
+        .then(function(text) {
+          const map = parseCSV(text);
+          if (map.size > 0) {
+            applyData(map, 'GitHub');
+          } else {
+            setStatus('⚠ El archivo
+    
