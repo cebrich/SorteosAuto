@@ -2,7 +2,6 @@ import os
 import datetime
 import requests
 
-# Configuración de anclaje
 ANCHOR_DATE = datetime.date(2026, 11, 12)
 ANCHOR_NUM = 91
 REF_COUNTER = 13284
@@ -77,15 +76,25 @@ def main():
             
     os.makedirs("data", exist_ok=True)
     
-    # Cabecera para simular un navegador web y evitar el error 403
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
+    # Crear sesión para gestionar cookies y simular navegador completo
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+        "Referer": "https://www.loteriasyapuestas.es/"
+    })
     
+    try:
+        # Visitar la página principal primero para capturar las cookies de sesión del WAF
+        session.get("https://www.loteriasyapuestas.es/", timeout=15)
+    except Exception:
+        pass
+
     for draw in targets:
         print(f"Descargando sorteo: {draw['key']} ({draw['date']})...")
         try:
-            res = requests.get(draw['url'], headers=headers, timeout=15)
+            res = session.get(draw['url'], timeout=15)
             if res.status_code == 200 and len(res.text) > 100:
                 filepath = os.path.join("data", f"{draw['key']}.csv")
                 with open(filepath, "w", encoding="utf-8") as f:
