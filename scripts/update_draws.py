@@ -1,5 +1,6 @@
 import os
 import datetime
+import shutil
 import requests
 
 ANCHOR_DATE = datetime.date(2026, 11, 12)
@@ -74,29 +75,51 @@ def main():
         if found and found not in targets:
             targets.append(found)
             
-    os.makedirs("data", exist_ok=True)
+    # Carpeta temporal para las nuevas descargas
+    temp_dir = "temp_data"
+    os.makedirs(temp_dir, exist_ok=True)
     
     api_key = os.environ.get("SCRAPER_API_KEY")
+    downloaded_count = 0
     
     for draw in targets:
         print(f"Descargando sorteo: {draw['key']} ({draw['date']})...")
         try:
             if api_key:
-                # Enrutar a través de IP de España usando ScraperAPI
                 proxy_url = f"http://api.scraperapi.com?api_key={api_key}&country_code=es&url={requests.utils.quote(draw['url'])}"
                 res = requests.get(proxy_url, timeout=30)
             else:
                 res = requests.get(draw['url'], headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
                 
             if res.status_code == 200 and len(res.text) > 100:
-                filepath = os.path.join("data", f"{draw['key']}.csv")
+                filepath = os.path.join(temp_dir, f"{draw['key']}.csv")
                 with open(filepath, "w", encoding="utf-8") as f:
                     f.write(res.text)
-                print(f"-> Guardado con éxito en {filepath}")
+                print(f"-> Descargado con éxito en temporal: {draw['key']}.csv")
+                downloaded_count += 1
             else:
                 print(f"-> Aviso: El servidor devolvió estado {res.status_code}")
         except Exception as e:
             print(f"-> Error al descargar {draw['key']}: {e}")
+
+    # SEGURIDAD: Solo si hemos descargado con éxito algún archivo nuevo, actualizamos la carpeta definitiva
+    if downloaded_count > 0:
+        os.makedirs("data", exist_ok=True)
+        # Borrar archivos antiguos de la carpeta data
+        for filename in os.listdir("data"):
+            if filename.endswith(".csv"):
+                os.remove(os.path.join("data", filename))
+                
+        # Mover los nuevos archivos desde la carpeta temporal a data/
+        for filename in os.listdir(temp_dir):
+            shutil.move(os.path.join(temp_dir, filename), os.path.join("data", filename))
+        print("Carpeta 'data' actualizada correctamente con los nuevos archivos.")
+    else:
+        print("Aviso: No se pudo descargar ningún archivo nuevo. Se mantienen los datos anteriores por seguridad.")
+        
+    # Limpiar carpeta temporal
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
 
 if __name__ == "__main__":
     main()
