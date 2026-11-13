@@ -15,10 +15,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Instalar dependencias
-        run: python -m pip install requests
+        run: py -m pip install requests
 
       - name: Ejecutar script de descarga
-        run: python scripts/update_draws.py
+        run: py scripts/update_draws.py
 
       - name: Guardar cambios y subir a GitHub
         run: |
