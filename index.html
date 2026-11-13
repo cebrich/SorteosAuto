@@ -88,7 +88,7 @@
       <div style="margin-bottom:1rem;">
         <label for="sorteoSelect">Próximos sorteos</label>
         <select id="sorteoSelect">
-          <option value="">-- Cargando sorteos y fechas --</option>
+          <option value="">-- Selecciona un sorteo --</option>
         </select>
         <p class="hint">Los listados se cargan automáticamente desde la carpeta data/.</p>
       </div>
@@ -103,5 +103,260 @@
         <summary>Opciones manuales (respaldo)</summary>
         <div style="margin-top:0.7rem;">
           <div class="btn-row">
-            <button class="btn-primary"
+            <button class="btn-primary" id="btnSelectFile">📁 Seleccionar archivo CSV local</button>
+          </div>
+          <input type="file" id="fileInput" class="hidden-file" accept=".csv,text/csv,text/plain">
+        </div>
+      </details>
+    </div>
+
+    <!-- Búsqueda -->
+    <div class="card" id="searchCard" style="opacity:0.5; pointer-events:none;">
+      <h2>2. Buscar números</h2>
+
+      <div class="tabs">
+        <button class="tab active" data-mode="exact">Número exacto</button>
+        <button class="tab" data-mode="suffix">Terminación</button>
+        <button class="tab" data-mode="prefix">Inicio</button>
+      </div>
+
+      <div class="mode-panel active" id="panel-exact">
+        <label for="exactInput">Número de 5 cifras</label>
+        <input type="text" id="exactInput" maxlength="5" placeholder="Ej: 12345" inputmode="numeric">
+      </div>
+
+      <div class="mode-panel" id="panel-suffix">
+        <label for="suffixInput">Terminación (2, 3 o 4 cifras)</label>
+        <input type="text" id="suffixInput" maxlength="4" placeholder="Ej: 25 · 123 · 4567" inputmode="numeric">
+        <p class="hint">Números que <strong>terminan</strong> en esas cifras.</p>
+      </div>
+
+      <div class="mode-panel" id="panel-prefix">
+        <label for="prefixInput">Inicio (2, 3 o 4 cifras)</label>
+        <input type="text" id="prefixInput" maxlength="4" placeholder="Ej: 12 · 345 · 9876" inputmode="numeric">
+        <p class="hint">Números que <strong>empiezan</strong> por esas cifras.</p>
+      </div>
+
+      <div class="btn-row" style="margin-top:1rem;">
+        <button class="btn-primary" id="btnSearch">🔍 Buscar</button>
+        <button class="btn-secondary" id="btnClear">Limpiar</button>
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="card" id="resultsCard" style="display:none;">
+      <div class="results-header">
+        <h2 style="margin:0;">Resultados</h2>
+        <div class="results-count" id="resultsCount"></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Fracciones</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <p>No se encontraron números con ese criterio.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Datos procesados automáticamente en GitHub · Uso personal<br>
+    Esta herramienta no está afiliada a SELAE.
+  </footer>
+
+  <script>
+    let currentData = [];
+
+    const sorteoSelect = document.getElementById('sorteoSelect');
+    const statusDiv = document.getElementById('status');
+    const searchCard = document.getElementById('searchCard');
+    const resultsCard = document.getElementById('resultsCard');
+    const resultsBody = document.getElementById('resultsBody');
+    const resultsCount = document.getElementById('resultsCount');
+    const emptyState = document.getElementById('emptyState');
+    const btnClearData = document.getElementById('btnClearData');
+    
+    const btnSelectFile = document.getElementById('btnSelectFile');
+    const fileInput = document.getElementById('fileInput');
+
+    const availableDraws = [
+      { key: 'navidad', name: 'Sorteo Extraordinario de Navidad', date: '22/12/2026' },
+      { key: 'nino', name: 'Sorteo Extraordinario de "El Niño"', date: '06/01/2027' },
+      { key: 'jueves', name: 'Sorteo del Jueves', date: 'Próximo Jueves' },
+      { key: 'sabado', name: 'Sorteo del Sábado', date: 'Próximo Sábado' }
+    ];
+
+    function initDropdown() {
+      sorteoSelect.innerHTML = '<option value="">-- Selecciona un sorteo --</option>';
+      availableDraws.forEach(draw => {
+        const opt = document.createElement('option');
+        opt.value = draw.key;
+        opt.textContent = `${draw.name} (${draw.date})`;
+        sorteoSelect.appendChild(opt);
+      });
+
+      // Seleccionar por defecto Navidad directamente sin bloqueos de HEAD
+      sorteoSelect.value = 'navidad';
+      cargarCSVRemoto('navidad');
+    }
+
+    async function cargarCSVRemoto(key) {
+      if (!key) return;
+      
+      const drawInfo = availableDraws.find(d => d.key === key);
+      const nombreSorteo = drawInfo ? `${drawInfo.name} (${drawInfo.date})` : key;
+
+      showStatus(`Cargando ${nombreSorteo} desde el servidor...`, 'ok');
+      
+      try {
+        const response = await fetch(`data/${key}.csv?v=${new Date().getTime()}`);
+        if (!response.ok) throw new Error('El archivo aún no está subido en la carpeta data/');
+        
+        let fechaArchivoStr = '';
+        const lastModifiedHeader = response.headers.get('Last-Modified');
+        if (lastModifiedHeader) {
+          const fechaMod = new Date(lastModifiedHeader);
+          fechaArchivoStr = ` (Actualizado: ${fechaMod.toLocaleDateString()} ${fechaMod.toLocaleTimeString()})`;
+        }
+
+        const text = await response.text();
+        parseCSV(text, nombreSorteo, fechaArchivoStr);
+      } catch (err) {
+        showStatus(`Aviso: No se pudo cargar ${key}.csv (${err.message})`, 'error');
+        disableSearch();
+      }
+    }
+
+    sorteoSelect.addEventListener('change', (e) => {
+      cargarCSVRemoto(e.target.value);
+    });
+
+    btnSelectFile.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const fechaLocal = new Date(file.lastModified);
+        const fechaArchivoStr = ` (Local: ${fechaLocal.toLocaleDateString()} ${fechaLocal.toLocaleTimeString()})`;
+        parseCSV(evt.target.result, file.name, fechaArchivoStr);
+      };
+      reader.readAsText(file);
+    });
+
+    function parseCSV(text, sourceDesc, fechaArchivoStr = '') {
+      const lines = text.split(/\r\n|\n/);
+      currentData = [];
+      
+      for (let line of lines) {
+        if (!line.trim()) continue;
+        const cols = line.split(/[,;\t]/);
+        if (cols.length >= 2) {
+          const num = cols[0].trim().replace(/['"]/g, '');
+          const fracciones = cols[1].trim().replace(/['"]/g, '');
+          if (/^\d{1,5}$/.test(num)) {
+            currentData.push({ num: num.padStart(5, '0'), fracciones: fracciones });
+          }
+        }
+      }
+
+      if (currentData.length > 0) {
+        showStatus(`✓ Cargado: ${sourceDesc} — ${currentData.length} números${fechaArchivoStr}`, 'ok');
+        searchCard.style.opacity = '1';
+        searchCard.style.pointerEvents = 'auto';
+      } else {
+        showStatus('El archivo CSV no contiene registros válidos.', 'error');
+        disableSearch();
+      }
+    }
+
+    function disableSearch() {
+      currentData = [];
+      searchCard.style.opacity = '0.5';
+      searchCard.style.pointerEvents = 'none';
+      resultsCard.style.display = 'none';
+    }
+
+    function showStatus(msg, type) {
+      statusDiv.textContent = msg;
+      statusDiv.className = 'status ' + type;
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        const mode = tab.getAttribute('data-mode');
+        document.getElementById(`panel-${mode}`).classList.add('active');
+      });
+    });
+
+    document.getElementById('btnSearch').addEventListener('click', () => {
+      const activeTab = document.querySelector('.tab.active').getAttribute('data-mode');
+      let query = '';
+      
+      if (activeTab === 'exact') query = document.getElementById('exactInput').value.trim();
+      if (activeTab === 'suffix') query = document.getElementById('suffixInput').value.trim();
+      if (activeTab === 'prefix') query = document.getElementById('prefixInput').value.trim();
+
+      if (!query) return;
+
+      let results = [];
+      if (activeTab === 'exact') {
+        const padded = query.padStart(5, '0');
+        results = currentData.filter(item => item.num === padded);
+      } else if (activeTab === 'suffix') {
+        results = currentData.filter(item => item.num.endsWith(query));
+      } else if (activeTab === 'prefix') {
+        results = currentData.filter(item => item.num.startsWith(query));
+      }
+
+      renderResults(results);
+    });
+
+    function renderResults(results) {
+      resultsCard.style.display = 'block';
+      resultsBody.innerHTML = '';
+      resultsCount.innerHTML = `Se encontraron <strong>${results.length}</strong> números`;
+
+      if (results.length === 0) {
+        emptyState.style.display = 'block';
+      } else {
+        emptyState.style.display = 'none';
+        results.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td class="num">${item.num}</td><td>${item.fracciones}</td>`;
+          resultsBody.appendChild(tr);
+        });
+      }
+    }
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      document.getElementById('exactInput').value = '';
+      document.getElementById('suffixInput').value = '';
+      document.getElementById('prefixInput').value = '';
+      resultsCard.style.display = 'none';
+    });
+
+    btnClearData.addEventListener('click', () => {
+      disableSearch();
+      sorteoSelect.value = '';
+      showStatus('Caché y selección borradas.', 'ok');
+    });
+
+    initDropdown();
+  </script>
+</body>
+</html>
 
