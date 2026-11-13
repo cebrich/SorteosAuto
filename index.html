@@ -211,7 +211,6 @@
     async function cargarSorteoPorDefecto() {
       let targetKey = 'navidad';
       
-      // Comprobar si Navidad existe en la carpeta data/, si no, buscar el primer disponible
       try {
         const testRes = await fetch(`data/navidad.csv`, { method: 'HEAD' });
         if (!testRes.ok) {
@@ -227,12 +226,17 @@
 
     async function cargarCSVRemoto(key) {
       if (!key) return;
-      showStatus('Cargando sorteo desde el servidor...', 'ok');
+      
+      const drawInfo = availableDraws.find(d => d.key === key);
+      const nombreSorteo = drawInfo ? `${drawInfo.name} (${drawInfo.date})` : key;
+
+      showStatus(`Cargando ${nombreSorteo} desde el servidor...`, 'ok');
+      
       try {
         const response = await fetch(`data/${key}.csv`);
         if (!response.ok) throw new Error('El archivo aún no está subido en la carpeta data/');
         const text = await response.text();
-        parseCSV(text, `${key}.csv`);
+        parseCSV(text, nombreSorteo);
       } catch (err) {
         showStatus(`Aviso: ${err.message}`, 'error');
         disableSearch();
@@ -257,8 +261,8 @@
       reader.readAsText(file);
     });
 
-    // Procesar contenido del CSV
-    function parseCSV(text, sourceName) {
+    // Procesar contenido del CSV y mostrar la fecha detallada
+    function parseCSV(text, sourceDesc) {
       const lines = text.split(/\r\n|\n/);
       currentData = [];
       
@@ -275,7 +279,7 @@
       }
 
       if (currentData.length > 0) {
-        showStatus(`Cargado con éxito: ${sourceName} (${currentData.length} números)`, 'ok');
+        showStatus(`✓ Cargado con éxito: ${sourceDesc} — ${currentData.length} números disponibles`, 'ok');
         searchCard.style.opacity = '1';
         searchCard.style.pointerEvents = 'auto';
       } else {
