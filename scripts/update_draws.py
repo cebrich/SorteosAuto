@@ -14,9 +14,9 @@ EXTRAS = [
 ]
 SKIP = ["2026-12-05", "2026-12-19", "2027-01-02"]
 FIXED_NUMS = {"2026-12-22": 102, "2027-01-06": 1}
+
+# Amplición para que los sorteos recurrentes usen nombres fijos según el día de la semana
 LEGACY_KEYS = {
-    "2026-11-12": "jueves",
-    "2026-11-14": "sabado",
     "2026-12-22": "navidad",
     "2027-01-06": "nino"
 }
@@ -48,7 +48,15 @@ def generate_draws():
         if iso in FIXED_NUMS:
             num = FIXED_NUMS[iso]
             
-        key = LEGACY_KEYS.get(iso, f"s-{iso.replace('-', '')}")
+        # Asignación de nombres fijos: 'jueves' para los jueves (dow 3), 'sabado' para los sábados (dow 5)
+        if iso in LEGACY_KEYS:
+            key = LEGACY_KEYS[iso]
+        elif dow == 3:
+            key = "jueves"
+        elif dow == 5:
+            key = "sabado"
+        else:
+            key = f"s-{iso.replace('-', '')}"
         
         days_diff = (curr_date - ANCHOR_DATE).days
         counter = REF_COUNTER + days_diff
@@ -123,4 +131,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
