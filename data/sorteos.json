@@ -18,7 +18,7 @@
     "numero": 95,
     "nombre": "Sorteo del Jueves",
     "archivo": "data/2026-11-26.csv",
-    "disponible": true
+    "disponible": false
   },
   {
     "fecha": "2026-11-28",
