@@ -31,6 +31,7 @@
 
     .status { margin-top: 0.7rem; font-size: 0.9rem; padding: 0.55rem 0.85rem; border-radius: 8px; display: none; }
     .status.ok { display: block; background: #e8f5e9; color: var(--success); border: 1px solid #a5d6a7; }
+    .updated-info { font-size: 0.72rem; opacity: 0.75; }
     .status.error { display: block; background: #ffebee; color: var(--danger); border: 1px solid #ef9a9a; }
 
     label { display: block; font-size: 0.84rem; font-weight: 600; color: var(--muted); margin-bottom: 0.3rem; }
@@ -212,7 +213,8 @@
           key: s.archivo,
           name: s.nombre,
           date: formatFecha(s.fecha),
-          iso: s.fecha
+          iso: s.fecha,
+          disponible: s.disponible !== false
         }));
       } catch (err) {
         return fallbackDraws;
@@ -226,13 +228,16 @@
       availableDraws.forEach(draw => {
         const opt = document.createElement('option');
         opt.value = draw.key;
-        opt.textContent = `${draw.date} · ${draw.name}`;
+        const disponible = draw.disponible !== false;
+        opt.textContent = `${draw.date} · ${draw.name}` + (disponible ? '' : ' — aún sin datos');
+        opt.disabled = !disponible;
         sorteoSelect.appendChild(opt);
       });
 
-      // Por defecto Navidad; si no está, el primer sorteo de la lista.
-      const navidad = availableDraws.find(d => d.key.includes('navidad') || d.name.includes('Navidad'));
-      const porDefecto = navidad || availableDraws[0];
+      // Por defecto Navidad; si no está disponible, el primer sorteo con datos.
+      const conDatos = availableDraws.filter(d => d.disponible !== false);
+      const navidad = conDatos.find(d => d.key.includes('navidad') || d.name.includes('Navidad'));
+      const porDefecto = navidad || conDatos[0];
       if (porDefecto) {
         sorteoSelect.value = porDefecto.key;
         cargarCSVRemoto(porDefecto.key);
@@ -256,7 +261,7 @@
         const lastModifiedHeader = response.headers.get('Last-Modified');
         if (lastModifiedHeader) {
           const fechaMod = new Date(lastModifiedHeader);
-          fechaArchivoStr = ` (Actualizado: ${fechaMod.toLocaleDateString()} ${fechaMod.toLocaleTimeString()})`;
+          fechaArchivoStr = `Archivo actualizado el ${fechaMod.toLocaleDateString()} a las ${fechaMod.toLocaleTimeString()}`;
         }
 
         const text = await response.text();
@@ -281,7 +286,7 @@
       const reader = new FileReader();
       reader.onload = (evt) => {
         const fechaLocal = new Date(file.lastModified);
-        const fechaArchivoStr = ` (Local: ${fechaLocal.toLocaleDateString()} ${fechaLocal.toLocaleTimeString()})`;
+        const fechaArchivoStr = `Archivo local modificado el ${fechaLocal.toLocaleDateString()} a las ${fechaLocal.toLocaleTimeString()}`;
         parseCSV(evt.target.result, file.name, fechaArchivoStr);
       };
       reader.readAsText(file);
@@ -304,7 +309,16 @@
       }
 
       if (currentData.length > 0) {
-        showStatus(`✓ Cargado: ${sourceDesc} — ${currentData.length} números${fechaArchivoStr}`, 'ok');
+        statusDiv.textContent = '';
+        statusDiv.className = 'status ok';
+        statusDiv.appendChild(document.createTextNode(`✓ Cargado: ${sourceDesc} — ${currentData.length} números`));
+        if (fechaArchivoStr) {
+          const small = document.createElement('small');
+          small.className = 'updated-info';
+          small.textContent = fechaArchivoStr;
+          statusDiv.appendChild(document.createElement('br'));
+          statusDiv.appendChild(small);
+        }
         searchCard.style.opacity = '1';
         searchCard.style.pointerEvents = 'auto';
       } else {
