@@ -90,7 +90,7 @@
         <select id="sorteoSelect">
           <option value="">-- Selecciona un sorteo --</option>
         </select>
-        <p class="hint">Los listados se cargan automáticamente desde la carpeta data/.</p>
+        <p class="hint">Los sorteos y sus listados se cargan automáticamente desde la carpeta data/.</p>
       </div>
 
       <div class="status" id="status"></div>
@@ -186,25 +186,57 @@
     const btnSelectFile = document.getElementById('btnSelectFile');
     const fileInput = document.getElementById('fileInput');
 
-    const availableDraws = [
-      { key: 'navidad', name: 'Sorteo Extraordinario de Navidad', date: '22/12/2026' },
-      { key: 'nino', name: 'Sorteo Extraordinario de "El Niño"', date: '06/01/2027' },
-      { key: 'jueves', name: 'Sorteo del Jueves', date: 'Próximo Jueves' },
-      { key: 'sabado', name: 'Sorteo del Sábado', date: 'Próximo Sábado' }
+    // Respaldo si no existe data/sorteos.json: los 4 archivos de siempre.
+    const fallbackDraws = [
+      { key: 'data/navidad.csv', name: 'Sorteo Extraordinario de Navidad', date: '22/12/2026' },
+      { key: 'data/nino.csv', name: 'Sorteo Extraordinario de "El Niño"', date: '06/01/2027' },
+      { key: 'data/jueves.csv', name: 'Sorteo del Jueves', date: 'Próximo Jueves' },
+      { key: 'data/sabado.csv', name: 'Sorteo del Sábado', date: 'Próximo Sábado' }
     ];
 
-    function initDropdown() {
+    let availableDraws = [];
+
+    function formatFecha(iso) {
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    // Lee data/sorteos.json (lo genera el script) con todos los sorteos disponibles.
+    async function loadDrawList() {
+      try {
+        const response = await fetch(`data/sorteos.json?v=${new Date().getTime()}`);
+        if (!response.ok) throw new Error('sin sorteos.json');
+        const list = await response.json();
+        if (!Array.isArray(list) || list.length === 0) throw new Error('lista vacía');
+        return list.map(s => ({
+          key: s.archivo,
+          name: s.nombre,
+          date: formatFecha(s.fecha),
+          iso: s.fecha
+        }));
+      } catch (err) {
+        return fallbackDraws;
+      }
+    }
+
+    async function initDropdown() {
+      availableDraws = await loadDrawList();
+
       sorteoSelect.innerHTML = '<option value="">-- Selecciona un sorteo --</option>';
       availableDraws.forEach(draw => {
         const opt = document.createElement('option');
         opt.value = draw.key;
-        opt.textContent = `${draw.name} (${draw.date})`;
+        opt.textContent = `${draw.date} · ${draw.name}`;
         sorteoSelect.appendChild(opt);
       });
 
-      // Seleccionar por defecto Navidad directamente sin bloqueos de HEAD
-      sorteoSelect.value = 'navidad';
-      cargarCSVRemoto('navidad');
+      // Por defecto Navidad; si no está, el primer sorteo de la lista.
+      const navidad = availableDraws.find(d => d.key.includes('navidad') || d.name.includes('Navidad'));
+      const porDefecto = navidad || availableDraws[0];
+      if (porDefecto) {
+        sorteoSelect.value = porDefecto.key;
+        cargarCSVRemoto(porDefecto.key);
+      }
     }
 
     async function cargarCSVRemoto(key) {
@@ -212,11 +244,12 @@
       
       const drawInfo = availableDraws.find(d => d.key === key);
       const nombreSorteo = drawInfo ? `${drawInfo.name} (${drawInfo.date})` : key;
+      const archivo = key;
 
       showStatus(`Cargando ${nombreSorteo} desde el servidor...`, 'ok');
       
       try {
-        const response = await fetch(`data/${key}.csv?v=${new Date().getTime()}`);
+        const response = await fetch(`${archivo}?v=${new Date().getTime()}`);
         if (!response.ok) throw new Error('El archivo aún no está subido en la carpeta data/');
         
         let fechaArchivoStr = '';
@@ -229,7 +262,7 @@
         const text = await response.text();
         parseCSV(text, nombreSorteo, fechaArchivoStr);
       } catch (err) {
-        showStatus(`Aviso: No se pudo cargar ${key}.csv (${err.message})`, 'error');
+        showStatus(`Aviso: No se pudo cargar ${archivo} (${err.message})`, 'error');
         disableSearch();
       }
     }
