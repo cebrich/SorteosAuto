@@ -3,18 +3,77 @@
     "fecha": "2026-11-19",
     "numero": 93,
     "nombre": "Sorteo del Jueves",
-    "archivo": "data/2026-11-19.csv"
+    "archivo": "data/2026-11-19.csv",
+    "disponible": true
   },
   {
     "fecha": "2026-11-21",
     "numero": 94,
     "nombre": "Sorteo del Sábado",
-    "archivo": "data/2026-11-21.csv"
+    "archivo": "data/2026-11-21.csv",
+    "disponible": true
   },
   {
     "fecha": "2026-11-26",
     "numero": 95,
     "nombre": "Sorteo del Jueves",
-    "archivo": "data/2026-11-26.csv"
+    "archivo": "data/2026-11-26.csv",
+    "disponible": true
+  },
+  {
+    "fecha": "2026-11-28",
+    "numero": 96,
+    "nombre": "Sorteo del Sábado",
+    "archivo": "data/2026-11-28.csv",
+    "disponible": true
+  },
+  {
+    "fecha": "2026-12-03",
+    "numero": 97,
+    "nombre": "Sorteo del Jueves",
+    "archivo": "data/2026-12-03.csv",
+    "disponible": false
+  },
+  {
+    "fecha": "2026-12-06",
+    "numero": 98,
+    "nombre": "Sorteo Extraordinario Día de la Constitución",
+    "archivo": "data/2026-12-06.csv",
+    "disponible": false
+  },
+  {
+    "fecha": "2026-12-10",
+    "numero": 99,
+    "nombre": "Sorteo del Jueves",
+    "archivo": "data/2026-12-10.csv",
+    "disponible": false
+  },
+  {
+    "fecha": "2026-12-12",
+    "numero": 100,
+    "nombre": "Sorteo del Sábado",
+    "archivo": "data/2026-12-12.csv",
+    "disponible": false
+  },
+  {
+    "fecha": "2026-12-17",
+    "numero": 101,
+    "nombre": "Sorteo del Jueves",
+    "archivo": "data/2026-12-17.csv",
+    "disponible": false
+  },
+  {
+    "fecha": "2026-12-22",
+    "numero": 102,
+    "nombre": "Sorteo Extraordinario de Navidad",
+    "archivo": "data/2026-12-22.csv",
+    "disponible": true
+  },
+  {
+    "fecha": "2027-01-06",
+    "numero": 1,
+    "nombre": "Sorteo Extraordinario de “El Niño”",
+    "archivo": "data/2027-01-06.csv",
+    "disponible": true
   }
 ]
