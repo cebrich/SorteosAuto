@@ -1,0 +1,20 @@
+[
+  {
+    "fecha": "2026-11-19",
+    "numero": 93,
+    "nombre": "Sorteo del Jueves",
+    "archivo": "data/2026-11-19.csv"
+  },
+  {
+    "fecha": "2026-11-21",
+    "numero": 94,
+    "nombre": "Sorteo del Sábado",
+    "archivo": "data/2026-11-21.csv"
+  },
+  {
+    "fecha": "2026-11-26",
+    "numero": 95,
+    "nombre": "Sorteo del Jueves",
+    "archivo": "data/2026-11-26.csv"
+  }
+]
