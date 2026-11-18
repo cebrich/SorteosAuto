@@ -74,8 +74,8 @@ def generate_draws():
     return list_draws
 
 
-def download_csv(url, api_key, retries=3):
-    """Descarga un CSV con reintentos. Devuelve el texto o None."""
+def download_csv(url, api_key, retries=2):
+    """Descarga un CSV con un reintento rápido. Devuelve el texto o None."""
     for attempt in range(1, retries + 1):
         try:
             if api_key:
@@ -83,16 +83,17 @@ def download_csv(url, api_key, retries=3):
                     f"http://api.scraperapi.com?api_key={api_key}"
                     f"&country_code=es&url={requests.utils.quote(url)}"
                 )
-                res = requests.get(proxy_url, timeout=60)
+                res = requests.get(proxy_url, timeout=45)
             else:
-                res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
+                res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
 
             if res.status_code == 200 and len(res.text) > 100:
                 return res.text
             print(f"   Intento {attempt}/{retries}: estado {res.status_code}")
         except Exception as e:
             print(f"   Intento {attempt}/{retries}: error {e}")
-        time.sleep(5 * attempt)
+        if attempt < retries:
+            time.sleep(1)
     return None
 
 
