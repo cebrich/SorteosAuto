@@ -1,12 +1,5 @@
 [
   {
-    "fecha": "2026-11-21",
-    "numero": 94,
-    "nombre": "Sorteo del Sábado",
-    "archivo": "data/2026-11-21.csv",
-    "disponible": true
-  },
-  {
     "fecha": "2026-11-26",
     "numero": 95,
     "nombre": "Sorteo del Jueves",
@@ -32,7 +25,7 @@
     "numero": 98,
     "nombre": "Sorteo Extraordinario Día de la Constitución",
     "archivo": "data/2026-12-06.csv",
-    "disponible": false
+    "disponible": true
   },
   {
     "fecha": "2026-12-10",
@@ -67,6 +60,13 @@
     "numero": 103,
     "nombre": "Sorteo del Jueves",
     "archivo": "data/2026-12-24.csv",
+    "disponible": false
+  },
+  {
+    "fecha": "2026-12-26",
+    "numero": 104,
+    "nombre": "Sorteo del Sábado",
+    "archivo": "data/2026-12-26.csv",
     "disponible": false
   },
   {
