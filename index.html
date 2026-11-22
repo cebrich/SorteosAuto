@@ -116,30 +116,23 @@
       <h2>2. Buscar números</h2>
 
       <div class="tabs">
-        <button class="tab active" data-mode="exact">Número exacto</button>
-        <button class="tab" data-mode="suffix">Terminación</button>
+        <button class="tab active" data-mode="suffix">Terminación</button>
         <button class="tab" data-mode="prefix">Inicio</button>
       </div>
 
-      <div class="mode-panel active" id="panel-exact">
-        <label for="exactInput">Número de 5 cifras</label>
-        <input type="text" id="exactInput" maxlength="5" placeholder="Ej: 12345" inputmode="numeric">
-      </div>
-
-      <div class="mode-panel" id="panel-suffix">
-        <label for="suffixInput">Terminación (2, 3 o 4 cifras)</label>
-        <input type="text" id="suffixInput" maxlength="4" placeholder="Ej: 25 · 123 · 4567" inputmode="numeric">
-        <p class="hint">Números que <strong>terminan</strong> en esas cifras.</p>
+      <div class="mode-panel active" id="panel-suffix">
+        <label for="suffixInput">Terminación (hasta 5 cifras)</label>
+        <input type="text" id="suffixInput" maxlength="5" placeholder="Ej: 25 · 123 · 45678" inputmode="numeric" autocomplete="off">
+        <p class="hint">Números que <strong>terminan</strong> en esas cifras. Los resultados salen según escribes.</p>
       </div>
 
       <div class="mode-panel" id="panel-prefix">
-        <label for="prefixInput">Inicio (2, 3 o 4 cifras)</label>
-        <input type="text" id="prefixInput" maxlength="4" placeholder="Ej: 12 · 345 · 9876" inputmode="numeric">
-        <p class="hint">Números que <strong>empiezan</strong> por esas cifras.</p>
+        <label for="prefixInput">Inicio (hasta 5 cifras)</label>
+        <input type="text" id="prefixInput" maxlength="5" placeholder="Ej: 12 · 345 · 98765" inputmode="numeric" autocomplete="off">
+        <p class="hint">Números que <strong>empiezan</strong> por esas cifras. Los resultados salen según escribes.</p>
       </div>
 
       <div class="btn-row" style="margin-top:1rem;">
-        <button class="btn-primary" id="btnSearch">🔍 Buscar</button>
         <button class="btn-secondary" id="btnClear">Limpiar</button>
       </div>
     </div>
@@ -321,6 +314,7 @@
         }
         searchCard.style.opacity = '1';
         searchCard.style.pointerEvents = 'auto';
+        runSearch();
       } else {
         showStatus('El archivo CSV no contiene registros válidos.', 'error');
         disableSearch();
@@ -346,42 +340,53 @@
         tab.classList.add('active');
         const mode = tab.getAttribute('data-mode');
         document.getElementById(`panel-${mode}`).classList.add('active');
+        runSearch();
       });
     });
 
-    document.getElementById('btnSearch').addEventListener('click', () => {
+    const MAX_FILAS = 300;
+
+    // Busca en vivo según el modo activo (terminación o inicio).
+    function runSearch() {
       const activeTab = document.querySelector('.tab.active').getAttribute('data-mode');
-      let query = '';
-      
-      if (activeTab === 'exact') query = document.getElementById('exactInput').value.trim();
-      if (activeTab === 'suffix') query = document.getElementById('suffixInput').value.trim();
-      if (activeTab === 'prefix') query = document.getElementById('prefixInput').value.trim();
+      const input = document.getElementById(activeTab === 'suffix' ? 'suffixInput' : 'prefixInput');
+      const query = input.value.trim();
 
-      if (!query) return;
-
-      let results = [];
-      if (activeTab === 'exact') {
-        const padded = query.padStart(5, '0');
-        results = currentData.filter(item => item.num === padded);
-      } else if (activeTab === 'suffix') {
-        results = currentData.filter(item => item.num.endsWith(query));
-      } else if (activeTab === 'prefix') {
-        results = currentData.filter(item => item.num.startsWith(query));
+      if (!query || currentData.length === 0) {
+        resultsCard.style.display = 'none';
+        return;
       }
 
+      const results = activeTab === 'suffix'
+        ? currentData.filter(item => item.num.endsWith(query))
+        : currentData.filter(item => item.num.startsWith(query));
+
       renderResults(results);
+    }
+
+    ['suffixInput', 'prefixInput'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('input', () => {
+        // Solo dígitos
+        const limpio = el.value.replace(/\D/g, '');
+        if (limpio !== el.value) el.value = limpio;
+        runSearch();
+      });
     });
 
     function renderResults(results) {
       resultsCard.style.display = 'block';
       resultsBody.innerHTML = '';
-      resultsCount.innerHTML = `Se encontraron <strong>${results.length}</strong> números`;
+      const mostrados = results.slice(0, MAX_FILAS);
+      resultsCount.innerHTML = results.length > MAX_FILAS
+        ? `<strong>${results.length}</strong> números (mostrando los primeros ${MAX_FILAS}; escribe más cifras para afinar)`
+        : `Se encontraron <strong>${results.length}</strong> números`;
 
       if (results.length === 0) {
         emptyState.style.display = 'block';
       } else {
         emptyState.style.display = 'none';
-        results.forEach(item => {
+        mostrados.forEach(item => {
           const tr = document.createElement('tr');
           tr.innerHTML = `<td class="num">${item.num}</td><td>${item.fracciones}</td>`;
           resultsBody.appendChild(tr);
@@ -390,7 +395,6 @@
     }
 
     document.getElementById('btnClear').addEventListener('click', () => {
-      document.getElementById('exactInput').value = '';
       document.getElementById('suffixInput').value = '';
       document.getElementById('prefixInput').value = '';
       resultsCard.style.display = 'none';
