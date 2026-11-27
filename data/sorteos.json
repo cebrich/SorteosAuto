@@ -1,12 +1,5 @@
 [
   {
-    "fecha": "2026-11-26",
-    "numero": 95,
-    "nombre": "Sorteo del Jueves",
-    "archivo": "data/2026-11-26.csv",
-    "disponible": true
-  },
-  {
     "fecha": "2026-11-28",
     "numero": 96,
     "nombre": "Sorteo del Sábado",
@@ -32,7 +25,7 @@
     "numero": 99,
     "nombre": "Sorteo del Jueves",
     "archivo": "data/2026-12-10.csv",
-    "disponible": false
+    "disponible": true
   },
   {
     "fecha": "2026-12-12",
@@ -67,6 +60,13 @@
     "numero": 104,
     "nombre": "Sorteo del Sábado",
     "archivo": "data/2026-12-26.csv",
+    "disponible": false
+  },
+  {
+    "fecha": "2026-12-31",
+    "numero": 105,
+    "nombre": "Sorteo del Jueves",
+    "archivo": "data/2026-12-31.csv",
     "disponible": false
   },
   {
